@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 import socket
 import time
-from threading import Thread
+import os
+import sys
+
+# Entity: GeeksForGeeks
+# URL: https://www.geeksforgeeks.org/python-os-fork-method/
 
 #define address & buffer size
 HOST = ""
@@ -42,6 +46,7 @@ def send_data(serversocket, payload):
     print("Payload sent successfully")
 
 def handleConnection(conn, request):
+    sys.stdout.write("forked child")
     try:
         #define address info, payload, and buffer size
         host = 'www.google.com'
@@ -76,6 +81,9 @@ def handleConnection(conn, request):
         conn.sendall(full_data)
         conn.close()
         print(e)
+    
+    os._exit(0)
+
 
 def main():
     with create_tcp_socket() as s:
@@ -94,8 +102,13 @@ def main():
             #recieve data, wait a bit, then send it back
             request = conn.recv(BUFFER_SIZE)
 
-            t = Thread(target=handleConnection, args=(conn, request))
-            t.run()
+            pid = os.fork()
+
+            if pid == 0:
+                handleConnection(conn, request) 
+
+            conn.close()
+
 
 if __name__ == "__main__":
     main()

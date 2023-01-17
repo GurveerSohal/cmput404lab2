@@ -2,6 +2,10 @@
 import socket
 import time
 from threading import Thread
+import os
+
+# Entity: GeeksForGeeks
+# URL: https://www.geeksforgeeks.org/python-os-fork-method/
 
 #define address & buffer size
 HOST = ""
@@ -32,11 +36,13 @@ def main():
             conn, addr = s.accept()
             print("Connected by", addr)
 
-            t = Thread(target=handleConnection, args=(conn,))
-            t.run()
+            pid = os.fork()
 
-            
+            if pid == 0:
+                handleConnection(conn)
+                os._exit(0)
 
+            conn.close()
 
 if __name__ == "__main__":
     main()
