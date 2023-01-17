@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import socket
 import time
+from threading import Thread
 
 #define address & buffer size
 HOST = ""
@@ -40,6 +41,42 @@ def send_data(serversocket, payload):
         sys.exit()
     print("Payload sent successfully")
 
+def handleConnection(conn, request):
+    try:
+        #define address info, payload, and buffer size
+        host = 'www.google.com'
+        port = 80
+        payload = request
+
+        remote_ip = get_remote_ip(host)
+
+        tempClient = create_tcp_socket()
+        tempClient.connect((remote_ip , port))
+        print (f'Socket Connected to {host} on ip {remote_ip}')
+        
+        #send the data and shutdown
+        send_data(tempClient, payload)
+
+        #continue accepting data until no more left
+        full_data = b""
+        while True:
+            data = tempClient.recv(BUFFER_SIZE)
+            if not data:
+                 break
+            full_data += data
+
+
+        time.sleep(0.5)
+        conn.sendall(full_data)
+        conn.close()
+
+    except Exception as e:
+        full_data = b"error getting data from google\n"
+        time.sleep(0.5)
+        conn.sendall(full_data)
+        conn.close()
+        print(e)
+
 def main():
     with create_tcp_socket() as s:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -57,41 +94,8 @@ def main():
             #recieve data, wait a bit, then send it back
             request = conn.recv(BUFFER_SIZE)
 
-
-            try:
-                #define address info, payload, and buffer size
-                host = 'www.google.com'
-                port = 80
-                payload = request
-
-                remote_ip = get_remote_ip(host)
-
-                tempClient = create_tcp_socket()
-                tempClient.connect((remote_ip , port))
-                print (f'Socket Connected to {host} on ip {remote_ip}')
-                
-                #send the data and shutdown
-                send_data(tempClient, payload)
-
-                #continue accepting data until no more left
-                full_data = b""
-                while True:
-                    data = tempClient.recv(BUFFER_SIZE)
-                    if not data:
-                         break
-                    full_data += data
-
-
-                time.sleep(0.5)
-                conn.sendall(full_data)
-                conn.close()
-
-            except Exception as e:
-                full_data = b"error getting data from google\n"
-                time.sleep(0.5)
-                conn.sendall(full_data)
-                conn.close()
-                print(e)
+            t = Thread(target=handleConnection, args=(conn, request))
+            t.run()
 
 if __name__ == "__main__":
     main()
